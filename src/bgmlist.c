@@ -118,9 +118,11 @@ void load_instruments() {
 			fread(&spc[addr], size, 1, rom);
 		}
 	}
-	sample_ptr_base = 0x6C00;
+	//sample_ptr_base = 0x6C00;
+	sample_ptr_base = 0x3C00;
 	decode_samples(&spc[sample_ptr_base]);
-	inst_base = 0x6E00;
+	//inst_base = 0x6E00;
+	inst_base = 0x3E00;
 	if (samp[0].data == NULL)
 		song_playing = FALSE;
 	initialize_state();
@@ -148,11 +150,11 @@ static void song_search() {
 	int num = strtol(str, &endhex, 16) - 1;
 	if (*endhex != '\0' || num < 0 || num >= NUM_SONGS) {
 		num = selected_bgm;
-		_strlwr(str);
+		strlwr(str);
 		do {
 			char title[MAX_TITLE_LEN+1];
 			if (++num == NUM_SONGS) num = 0;
-			if (strstr(_strlwr(strcpy(title, bgm_title[num])), str))
+			if (strstr(strlwr(strcpy(title, bgm_title[num])), str))
 				break;
 		} while (num != selected_bgm);
 	}
@@ -218,7 +220,7 @@ LRESULT CALLBACK BGMListWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPar
 			if (bgm_title[selected_bgm] != bgm_orig_title[selected_bgm])
 				free(bgm_title[selected_bgm]);
 			GetDlgItemText(hWnd, IDC_TITLE, buf+4, MAX_TITLE_LEN+1);
-			bgm_title[selected_bgm] = _strdup(buf+4);
+			bgm_title[selected_bgm] = strdup(buf+4);
 			sprintf(buf, "%02X:", selected_bgm + 1);
 			buf[3] = ' ';
 			SendDlgItemMessage(hWnd, IDC_LIST, LB_DELETESTRING, selected_bgm, 0);
