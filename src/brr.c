@@ -12,6 +12,7 @@ enum {
 
 struct sample samp[128];
 WORD sample_ptr_base = 0x6C00;
+//WORD sample_ptr_base = 0x3C00;
 
 // Counts and returns the number of BRR blocks from a specific location in memory.
 // This makes no attempt to simulate the behavior of the SPC on key on. It ignores the header of a
