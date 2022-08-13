@@ -5,6 +5,7 @@
 
 BYTE spc[65536];
 int inst_base = 0x6E00;
+//int inst_base = 0x3E00;
 
 // note style tables, from 6F80
 static const unsigned char release_table[] = {
@@ -303,7 +304,7 @@ void load_pattern() {
 	}
 
 	int pat = cur_song.order[state.ordnum];
-	printf("Order %d: pattern %d\n", state.ordnum, pat);
+	//printf("Order %d: pattern %d\n", state.ordnum, pat);
 
 	int ch;
 	for (ch = 0; ch < 8; ch++) {
