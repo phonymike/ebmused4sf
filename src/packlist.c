@@ -97,12 +97,16 @@ static void show_blocks(HWND packlist, struct pack *p, LV_ITEM *lvi) {
 		if (b->spc_address == 0x0500) {
 			lvi->pszText = "Program";
 		} else if (b->spc_address >= 0x6C00 && b->spc_address < 0x6E00) {
+		//} else if (b->spc_address >= 0x3C00 && b->spc_address < 0x3E00) {
 			lvi->pszText = "Sample pointers";
 		} else if (b->spc_address >= 0x6E00 && b->spc_address < 0x6F80) {
+		//} else if (b->spc_address >= 0x3E00 && b->spc_address < 0x3F80) {
 			lvi->pszText = "Instruments";
 		} else if (b->spc_address == 0x6F80) {
+		//} else if (b->spc_address == 0x3F80) {
 			lvi->pszText = "Note style tables";
 		} else if (b->spc_address >= 0x7000 && b->spc_address <= 0xE800) {
+		//} else if (b->spc_address >= 0x4000 && b->spc_address <= 0xB800) {
 			lvi->pszText = "Samples";
 		} else if (b->spc_address >= 0x4800 && b->spc_address < 0x6C00) {
 			strcpy(buf, "Unused song");
