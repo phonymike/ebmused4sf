@@ -1,8 +1,8 @@
 #include <windows.h>
 #include "structs.h"
 
-#ifdef NDEBUG
-#define printf(x,...)
+#ifdef DEBUG
+#define printf printf2
 #endif
 
 // EarthBound related constants
