@@ -106,7 +106,9 @@ BOOL open_rom(char *filename, BOOL readonly) {
 	if (!close_rom())
 		return FALSE;
 
-	rom_size = _filelength(_fileno(f));
+	fseek(f, 0, SEEK_END);
+	rom_size = ftell(f);
+	fseek(f, 0, SEEK_SET);
 	rom_offset = rom_size & 0x200;
 	if (rom_size < 0x300000) {
 		MessageBox2("An EarthBound ROM must be at least 3 MB", "Can't open file", MB_ICONEXCLAMATION);
@@ -114,7 +116,7 @@ BOOL open_rom(char *filename, BOOL readonly) {
 		return FALSE;
 	}
 	rom = f;
-	rom_filename = _strdup(filename);
+	rom_filename = strdup(filename);
 	enable_menu_items(rom_menu_cmds, MF_ENABLED);
 
 	init_areas();
