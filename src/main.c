@@ -16,6 +16,35 @@
 #include <commctrl.h>
 #include "ebmusv2.h"
 
+#ifdef DEBUG
+#include <fcntl.h>
+
+int printf2(const char *format, ...)
+{
+	// this is for the command line output
+    char str[1024];
+
+    va_list argptr;
+    va_start(argptr, format);
+    int ret = vsnprintf(str, sizeof(str), format, argptr);
+    va_end(argptr);
+
+    fprintf(stdout, str);
+
+    return ret;
+}
+#endif
+
+
+static const BYTE starfox_sound_data_cmds[] = {
+	ID_EXPORT_STARFOX_BIN_E000,
+	ID_EXPORT_STARFOX_BIN_E600,
+	ID_EXPORT_STARFOX_BIN_EC20,
+	ID_EXPORT_STARFOX_BIN_F000,
+	0
+};
+
+
 struct song cur_song;
 BYTE packs_loaded[3] = { 0xFF, 0xFF, 0xFF };
 int current_block = -1;
@@ -56,15 +85,19 @@ static const WNDPROC tab_wndproc[NUM_TABS] = {
 static char filename[MAX_PATH];
 static OPENFILENAME ofn;
 static char *open_dialog(BOOL (WINAPI *func)(LPOPENFILENAME),
-	char *filter, char *extension, DWORD flags)
+	char *filter, char *extension, char *file, DWORD flags)
 {
-	*filename = '\0';
+	if (file) {							// suggested filename
+		strcpy(filename, file);
+	} else {
+		*filename = '\0';
+	}
 	ofn.lStructSize = sizeof ofn;
 	ofn.hwndOwner = hwndMain;
 	ofn.lpstrFilter = filter;
 	ofn.lpstrDefExt = extension;
-	ofn.lpstrFile = filename;
-	ofn.nMaxFile = MAX_PATH;
+	ofn.lpstrFile = filename;			// must be a buffer, not a const string
+	ofn.nMaxFile = sizeof(filename) / sizeof(*filename);
 	ofn.Flags = flags | OFN_NOCHANGEDIR;
 	return func(&ofn) ? filename : NULL;
 }
@@ -72,6 +105,7 @@ static char *open_dialog(BOOL (WINAPI *func)(LPOPENFILENAME),
 BOOL get_original_rom() {
 	char *file = open_dialog(GetOpenFileName,
 		"SNES ROM files (*.smc, *.sfc)\0*.smc;*.sfc\0All Files\0*.*\0",
+		NULL,
 		NULL,
 		OFN_FILEMUSTEXIST | OFN_HIDEREADONLY);
 	BOOL ret = file && open_orig_rom(file);
@@ -108,7 +142,7 @@ static void import() {
 	}
 
 	char *file = open_dialog(GetOpenFileName,
-		"EarthBound Music files (*.ebm)\0*.ebm\0All Files\0*.*\0", NULL, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY);
+		"EarthBound Music files (*.ebm)\0*.ebm\0All Files\0*.*\0", NULL, NULL, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY);
 	if (!file) return;
 
 	FILE *f = fopen(file, "rb");
@@ -117,8 +151,12 @@ static void import() {
 		return;
 	}
 
+	fseek(f, 0, SEEK_END);
+	int pack_size = ftell(f);
+	fseek(f, 0, SEEK_SET);
+
 	struct block b;
-	if (!fread(&b, 4, 1, f) || b.spc_address + b.size > 0x10000 || _filelength(_fileno(f)) != 4 + b.size) {
+	if (!fread(&b, 4, 1, f) || b.spc_address + b.size > 0x10000 || pack_size != 4 + b.size) {
 		MessageBox2("File is not an EBmused export", "Import", MB_ICONEXCLAMATION);
 		goto err1;
 	}
@@ -297,6 +335,7 @@ static void import_spc() {
 	char *file = open_dialog(GetOpenFileName,
 		"SPC Savestates (*.spc)\0*.spc\0All Files\0*.*\0",
 		NULL,
+		NULL,
 		OFN_FILEMUSTEXIST | OFN_HIDEREADONLY);
 	if (!file) return;
 
@@ -324,22 +363,24 @@ static void import_spc() {
 
 		struct spcDetails details;
 		enum SPC_RESULTS results = try_parse_spc(spc, &details);
+		printf("%s\n", filename);
 		if (results) {
 			if (results & HAS_INSTRUMENTS) {
-				printf("Instrument table found: %#X\n", details.instrument_table_addr);
+				printf("Inst Prms: %#X\n", details.instrument_table_addr);
 				inst_base = details.instrument_table_addr;
 			}
 			if (results & HAS_MUSIC) {
-				printf("Music table found: %#X\n", details.music_table_addr);
-				printf("Music index found: %#X\n", details.music_index);
-				printf("Music found: %#X\n", details.music_addr);
+				printf("Song Tabl: %#X\n", details.music_table_addr);
+				//printf("Music index found: %#X\n", details.music_index);
+				printf("Song Data: %#X\n\n", details.music_addr);
 
 				free_song(&cur_song);
 				decompile_song(&cur_song, details.music_addr, 0xffff);
 			}
-
 			initialize_state();
 			SendMessage(tab_hwnd[current_tab], WM_SONG_IMPORTED, 0, 0);
+
+			enable_menu_items(starfox_sound_data_cmds, MF_ENABLED);
 		} else {
 			// Restore SPC state and samples
 			memcpy(spc, backup_spc, 0x10000);
@@ -369,7 +410,7 @@ static void export() {
 		return;
 	}
 
-	char *file = open_dialog(GetSaveFileName, "EarthBound Music files (*.ebm)\0*.ebm\0", "ebm", OFN_OVERWRITEPROMPT);
+	char *file = open_dialog(GetSaveFileName, "EarthBound Music files (*.ebm)\0*.ebm\0", "ebm", NULL, OFN_OVERWRITEPROMPT);
 	if (!file) return;
 
 	FILE *f = fopen(file, "wb");
@@ -385,7 +426,7 @@ static void export() {
 static void write_spc(FILE *f);
 static void export_spc() {
 	if (cur_song.order_length > 0) {
-		char *file = open_dialog(GetSaveFileName, "SPC files (*.spc)\0*.spc\0", "spc", OFN_OVERWRITEPROMPT);
+		char *file = open_dialog(GetSaveFileName, "SPC files (*.spc)\0*.spc\0", "spc", NULL, OFN_OVERWRITEPROMPT);
 		if (file) {
 			FILE *f = fopen(file, "wb");
 			if (f) {
@@ -418,6 +459,57 @@ static void pack_to_spc(BYTE pack, BYTE* spc) {
 	}
 }
 
+static void export_starfox_bin(WORD dstMusic) {
+	// compile_song corrupts the spc and any potential samples/instruments, so we need to make a copy first...
+	BYTE *spc_copy = malloc(0x10000 * sizeof(*spc_copy));
+	memcpy(spc_copy, spc, 0x10000);
+
+	// get size of song data
+	const int music_size = compile_song(&cur_song);
+	printf("Song start: 0x%X\n", cur_song.address);
+	printf("Song size: %d bytes\n", music_size);
+
+	// check to make sure song doesn't go over 64KB
+	if (dstMusic + music_size > 0xFFFF) {
+		printf("ERROR: Song data too big by %d bytes\n", dstMusic + music_size - 0xFFFF);
+		MessageBox2("Song data overruns 64KB. Must insert at lower memory address.", "Bin export error", MB_ICONEXCLAMATION);
+		memcpy(spc, spc_copy, 0x10000);
+		free(spc_copy);
+		return;
+	}
+
+	// make suggested filename such as "SONG_DATA_E000"
+	char fileNameBuff[64];
+	sprintf(fileNameBuff, "SONG_DATA_" "%04X", dstMusic);
+	
+	char *binFileName = open_dialog(GetSaveFileName, "BIN files (*.bin)\0*.bin\0", "bin", fileNameBuff, OFN_OVERWRITEPROMPT);
+	
+	if (!binFileName) {
+		printf("No output BIN file selected.\n");
+		return;
+	}
+	printf("%s\n", binFileName);
+
+	// recompile song data so the addresses are correct...
+	cur_song.address = dstMusic;
+	compile_song(&cur_song);
+	printf("Recompiled to 0x%X\n", cur_song.address);
+
+	// open output bin file, save or fail
+	FILE *fpOutput;
+	if ((fpOutput = fopen(binFileName, "wb")))	{
+		// write output bin file and close it
+		fwrite(&spc[dstMusic], 1, music_size, fpOutput);
+		fclose(fpOutput);
+	} else {
+		printf("ERROR: Cannot open output bin file \"%s\"\n", binFileName);
+		MessageBox2("Cannot open output BIN file.", "Bin export error", MB_ICONEXCLAMATION);
+	}
+
+	memcpy(spc, spc_copy, 0x10000);
+	free(spc_copy);
+}
+
 static void write_spc(FILE *f) {
 	// Load blank SPC file.
 	HRSRC res = FindResource(hinstance, MAKEINTRESOURCE(IDRC_SPC), RT_RCDATA);
@@ -448,33 +540,47 @@ static void write_spc(FILE *f) {
 		};
 
 		// Move the music from wherever it was in the spc to 0x3200... (ripping out part of the program block in the process...)
-		const WORD dstMusic = 0x3100;
+		//const WORD dstMusic = 0x3100;
+		//#define HARD_CODED_DST 0xF8FE
+		#define HARD_CODED_DST 0xF8FE
+		WORD dstMusic = HARD_CODED_DST;
 		const int music_size = compile_song(&cur_song);
 		memcpy(&spc[SPC_HEADER_SIZE + dstMusic], &spc_copy[cur_song.address], music_size);
 
 		// recompile so the addresses are correct...
 		cur_song.address = dstMusic;
 		compile_song(&cur_song);
+		printf("Recompiled to 0x%X\n", cur_song.address);
+
+		dstMusic = 0x3100;
 
 		// Size of the instruments table
 		const WORD inst_size = NUM_INSTRUMENTS*6;
+	
 		// Calculate buffer size needed for sample pointer table to round to nearest 0x100.
 		const WORD REMAINDER = 0x100 - ((dstMusic + music_size) & 0xFF);
 		const WORD dstSamplePointers = dstMusic + music_size + REMAINDER;
-		const WORD dstInstruments = dstSamplePointers + 0x4*NUM_INSTRUMENTS + BUFFER;
-		const WORD dstSamples = dstInstruments + inst_size + BUFFER;
+
+		//const WORD dstInstruments = dstSamplePointers + 0x4*NUM_INSTRUMENTS + BUFFER;
+		// where to write instrument table
+		const WORD dstInstruments = 0x3D00;
+
+		//const WORD dstSamples = dstInstruments + inst_size + BUFFER;
+		const WORD dstSamples = 0x4000;
 
 		// Blank out some space (for the buffer spaces)
 		memset(&new_spc[SPC_HEADER_SIZE + dstMusic], 0, dstSamples - dstMusic);
 
+		dstMusic = HARD_CODED_DST;
 		// Copy music data...
-		printf("Packing music data to $%x\n", cur_song.address);
+		printf("Packing music data to $%X\n", cur_song.address);
+		//memcpy(&new_spc[SPC_HEADER_SIZE + dstMusic], &spc[cur_song.address], music_size);
 		memcpy(&new_spc[SPC_HEADER_SIZE + dstMusic], &spc[cur_song.address], music_size);
 		// Use the copy we made to restore the working spc to before compile_song borked it with the dstMusic address...
 		memcpy(spc, spc_copy, 0x10000);
 
 		// Copy instrument data...
-		printf("Packing instrument table to $%x\n", dstInstruments);
+		printf("Packing instrument table to $%X\n", dstInstruments);
 		memcpy(&new_spc[SPC_HEADER_SIZE + dstInstruments], &spc_copy[inst_base], inst_size);
 
 		// Copy sample data and pointers...
@@ -523,6 +629,7 @@ static void write_spc(FILE *f) {
 			memcpy(&new_spc[SPC_HEADER_SIZE + dstSamplePointers + 0x4*i + 0x2], &loop_addr, 2);
 		}
 
+		//dstMusic = 0xE600;
 		// We're done copying the important stuff, now we just need to adjust some pointers in the music program.
 		{
 			// Set pattern repeat location
@@ -600,7 +707,10 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		switch (id) {
 		case ID_OPEN: {
 			char *file = open_dialog(GetOpenFileName,
-				"SNES ROM files (*.smc, *.sfc)\0*.smc;*.sfc\0All Files\0*.*\0", NULL, OFN_FILEMUSTEXIST);
+				"SNES ROM files (*.smc, *.sfc)\0*.smc;*.sfc\0All Files\0*.*\0",
+				NULL,
+				NULL,
+				OFN_FILEMUSTEXIST);
 			if (file && open_rom(file, ofn.Flags & OFN_READONLY)) {
 				SendMessage(tab_hwnd[current_tab], WM_ROM_CLOSED, 0, 0);
 				SendMessage(tab_hwnd[current_tab], WM_ROM_OPENED, 0, 0);
@@ -619,6 +729,10 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case ID_IMPORT_SPC: import_spc(); break;
 		case ID_EXPORT: export(); break;
 		case ID_EXPORT_SPC: export_spc(); break;
+		case ID_EXPORT_STARFOX_BIN_E000: export_starfox_bin(0xE000); break;
+		case ID_EXPORT_STARFOX_BIN_E600: export_starfox_bin(0xE600); break;
+		case ID_EXPORT_STARFOX_BIN_EC20: export_starfox_bin(0xEC20); break;
+		case ID_EXPORT_STARFOX_BIN_F000: export_starfox_bin(0xF000); break;
 		case ID_EXIT: DestroyWindow(hWnd); break;
 		case ID_OPTIONS: {
 			extern BOOL CALLBACK OptionsDlgProc(HWND,UINT,WPARAM,LPARAM);
@@ -757,9 +871,26 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 	InitCommonControls();
 
+	#ifdef DEBUG
+		// opens a command line window
+		int hConHandle;
+		long lStdHandle;
+		FILE *fp;
+		AllocConsole();
+		// Redirect unbuffered STDOUT to the console
+		lStdHandle = (long)GetStdHandle(STD_OUTPUT_HANDLE);
+		hConHandle = _open_osfhandle(lStdHandle, _O_TEXT);
+		fp = _fdopen(hConHandle, "w");
+		*stdout = *fp;
+
+		setvbuf(stdout, NULL, _IONBF, 0);
+
+		printf("Debug output\n");
+	#endif
+
 //	SetUnhandledExceptionFilter(exfilter);
 
-	hwndMain = CreateWindow("ebmused_main", "EarthBound Music Editor",
+	hwndMain = CreateWindow("ebmused_main", "EarthBound Music Editor (but for StarFox)",
 		WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
 		CW_USEDEFAULT, CW_USEDEFAULT, 720, 540,
 		NULL, NULL, hInstance, NULL);
@@ -774,8 +905,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 	HACCEL hAccel = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDA_ACCEL));
 
-	if (_ARGC > 1)
-		open_rom(_ARGV[1], FALSE);
+	//if (_ARGC > 1)
+	//	open_rom(_ARGV[1], FALSE);
 	tab_selected(0);
 
 	while (GetMessage(&msg, NULL, 0, 0) > 0) {
