@@ -163,7 +163,7 @@ static void cursor_moved(BOOL select) {
 		if (cursor.ptr == NULL)
 			strcat(caption, " (not present)");
 	}
-	printf("t = %p\n", t);
+	//printf("t = %p\n", t);
 	if (t != cursor_track) {
 		SetDlgItemText(hwndEditor, IDC_EDITBOX_CAPTION, caption);
 		cursor_track = t;
@@ -342,6 +342,7 @@ LRESULT CALLBACK EditorWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 		ID_SET_DURATION_1, ID_SET_DURATION_2,
 		ID_SET_DURATION_3, ID_SET_DURATION_4,
 		ID_SET_DURATION_5, ID_SET_DURATION_6,
+		ID_EXPORT_STARFOX_BIN_E600, ID_EXPORT_STARFOX_BIN_F000,
 		0
 	};
 	switch (uMsg) {
@@ -873,7 +874,7 @@ static void cursor_to_xy(int x, int y, BOOL select) {
 	}
 	cursor_pos = pos;
 	cursor = p;
-	printf("cursor_pos = %d\n", cursor_pos);
+	//printf("cursor_pos = %d\n", cursor_pos);
 	cursor_moved(select);
 }
 
