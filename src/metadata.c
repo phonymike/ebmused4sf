@@ -212,7 +212,11 @@ BOOL open_orig_rom(char *filename) {
 		MessageBox2(strerror(errno), filename, MB_ICONEXCLAMATION);
 		return FALSE;
 	}
-	long size = _filelength(_fileno(f));
+
+	fseek(f, 0, SEEK_END);
+	long size = ftell(f);
+	fseek(f, 0, SEEK_SET);
+
 	if (size != rom_size) {
 		MessageBox2("File is not same size as current ROM", filename, MB_ICONEXCLAMATION);
 		fclose(f);
@@ -222,7 +226,7 @@ BOOL open_orig_rom(char *filename) {
 	orig_rom = f;
 	orig_rom_offset = size & 0x200;
 	free(orig_rom_filename);
-	orig_rom_filename = _strdup(filename);
+	orig_rom_filename = strdup(filename);
 	return TRUE;
 }
 
@@ -262,7 +266,7 @@ void load_metadata() {
 			unsigned int bgm;
 			fscanf(mf, "%X %" MAX_TITLE_LEN_STR "[^\n]", &bgm, buf);
 			if (--bgm < NUM_SONGS)
-				bgm_title[bgm] = _strdup(buf);
+				bgm_title[bgm] = strdup(buf);
 			while ((c = fgetc(mf)) >= 0 && c != '\n');
 		} else {
 			printf("unrecognized metadata line %c\n", c);
