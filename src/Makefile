@@ -4,7 +4,7 @@ CC = x86_64-w64-mingw32-gcc -DDEBUG -Os -W -Wall -std=gnu99
 a.exe: $O
 	x86_64-w64-mingw32-gcc -mwindows -s -fno-exceptions $O -lcomctl32 -lcomdlg32 -lgdi32 -lwinmm -Wl,ldscript
 	
-resource.o: resource.rc
+resource.o: resource.rc record.ico
 	windres $< -o $@
 
 clean:
