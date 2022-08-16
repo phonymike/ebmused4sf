@@ -15,12 +15,14 @@ BEGIN
 		MENUITEM "&Export Song...", ID_EXPORT//, GRAYED
 		MENUITEM "Import S&PC...", ID_IMPORT_SPC
 		MENUITEM "Expo&rt SPC...", ID_EXPORT_SPC//, GRAYED
-		POPUP "Export StarFox SONG_DATA..."
+		POPUP "Export StarFox SONG_DATA"
 		{
-			MENUITEM "0xE000 SGBGMI (Orchestra)", ID_EXPORT_STARFOX_BIN_E000, GRAYED
-			MENUITEM "0xE600 SGBGMA (Band)", ID_EXPORT_STARFOX_BIN_E600, GRAYED
-			MENUITEM "0xEC20 SGBMG7 (Asteroid Boss)", ID_EXPORT_STARFOX_BIN_EC20, GRAYED
-			MENUITEM "0xF000 SGSOUND7 (Title Screen)", ID_EXPORT_STARFOX_BIN_F000, GRAYED
+			MENUITEM "Custom Address...", ID_EXPORT_STARFOX_BIN_CUSTOM, GRAYED
+			MENUITEM SEPARATOR
+			MENUITEM "0xE000 SGBGMI (Orchestra)...", ID_EXPORT_STARFOX_BIN_E000, GRAYED
+			MENUITEM "0xE600 SGBGMA (Band)...", ID_EXPORT_STARFOX_BIN_E600, GRAYED
+			MENUITEM "0xEC20 SGBMG7 (Asteroid Boss)...", ID_EXPORT_STARFOX_BIN_EC20, GRAYED
+			MENUITEM "0xF000 SGSOUND7 (Title Screen)...", ID_EXPORT_STARFOX_BIN_F000, GRAYED
 		}
 		MENUITEM SEPARATOR
 		MENUITEM "E&xit", ID_EXIT
@@ -133,7 +135,7 @@ STYLE 0
 CAPTION "About"
 FONT 8, "MS Shell Dlg"
 BEGIN
-	LTEXT "EarthBound Music Editor v2.4.0sf\r\nReleased August 27, 2021\r\nProgrammed by Goplat\r\nAdditional programming by BlueStone, phoenixbound, and vince94\r\n", 0,
+	LTEXT "EarthBound Music Editor v2.4.0sf-a5\r\nReleased August 27, 2021\r\nProgrammed by Goplat\r\nAdditional programming by BlueStone, phoenixbound, and vince94\r\n", 0,
 	                                                   5,  5, 215, 55
 	DEFPUSHBUTTON "Fuzzy Pickles!", IDOK,            130,  8,  60, 14
 END
@@ -147,6 +149,17 @@ BEGIN
 	EDITTEXT IDC_TRANSPOSE_OFF,      50,  5, 42, 14
 	DEFPUSHBUTTON "&Apply", IDOK,     5, 24, 42, 14
 	PUSHBUTTON "&Cancel", IDCANCEL,  50, 24, 42, 14
+END
+
+IDD_CUSTOM_EXPORT DIALOG 0, 0, 130, 55
+STYLE 0
+CAPTION "SPC Address Export"
+FONT 8, "MS Shell Dlg"
+BEGIN
+	LTEXT "Address (hex):", 0,       10, 10, 55, 14
+	EDITTEXT IDC_CUSTOM_ADDRESS,     75,  8, 30, 14, ES_RIGHT | ES_UPPERCASE | ES_WANTRETURN
+	DEFPUSHBUTTON "&Save", IDOK,     12, 35, 44, 14
+	PUSHBUTTON "&Cancel", IDCANCEL,  74, 35, 44, 14
 END
 
 IDRC_SPC RCDATA "blank.spc"
