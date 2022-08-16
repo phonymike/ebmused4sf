@@ -37,6 +37,7 @@ int printf2(const char *format, ...)
 
 
 static const BYTE starfox_sound_data_cmds[] = {
+	ID_EXPORT_STARFOX_BIN_CUSTOM,
 	ID_EXPORT_STARFOX_BIN_E000,
 	ID_EXPORT_STARFOX_BIN_E600,
 	ID_EXPORT_STARFOX_BIN_EC20,
@@ -510,6 +511,53 @@ static void export_starfox_bin(WORD dstMusic) {
 	free(spc_copy);
 }
 
+WORD customAddress;
+
+WORD arg2word(char * input) {
+	char *remaining_input;
+
+	// get the input address as unsigned int
+	WORD value = strtoul(input, &remaining_input, 16);
+
+	if (*remaining_input != '\0' || value > 0xFFFF)
+	{
+		printf2("ERROR: Input address \"%s\" must be 4 hex characters or less.\n", input);
+		return 1;
+	}
+
+	customAddress = value;
+
+	return 0;
+}
+
+BOOL CALLBACK CustomAddressDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	switch (uMsg) {
+	case WM_INITDIALOG:
+		SendMessage(GetDlgItem(hWnd, IDC_CUSTOM_ADDRESS), EM_SETLIMITTEXT, 4, 0);
+		SetDlgItemText(hWnd, IDC_CUSTOM_ADDRESS, "E000");
+		break;
+	case WM_COMMAND:
+		switch (LOWORD(wParam)) {
+		case IDOK:
+			char inputAddressStr[5];
+			WORD inputAddressWord;
+			GetDlgItemText(hWnd, IDC_CUSTOM_ADDRESS, inputAddressStr, 5);
+			if (!arg2word(inputAddressStr)){
+				export_starfox_bin(customAddress);
+			} else {
+				MessageBox(NULL, "Address must be 4 hex characters or less.\nExample: E000", "ERROR", MB_OK | MB_ICONERROR);
+				break;
+			}
+			// fallthrough
+		case IDCANCEL:
+			EndDialog(hWnd, LOWORD(wParam));
+			break;
+		}
+	default: return FALSE;
+	}
+	return TRUE;
+}
+
 static void write_spc(FILE *f) {
 	// Load blank SPC file.
 	HRSRC res = FindResource(hinstance, MAKEINTRESOURCE(IDRC_SPC), RT_RCDATA);
@@ -729,6 +777,10 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case ID_IMPORT_SPC: import_spc(); break;
 		case ID_EXPORT: export(); break;
 		case ID_EXPORT_SPC: export_spc(); break;
+		case ID_EXPORT_STARFOX_BIN_CUSTOM: {
+			DialogBox(hinstance, MAKEINTRESOURCE(IDD_CUSTOM_EXPORT), hWnd, CustomAddressDlgProc);
+			break;
+		}
 		case ID_EXPORT_STARFOX_BIN_E000: export_starfox_bin(0xE000); break;
 		case ID_EXPORT_STARFOX_BIN_E600: export_starfox_bin(0xE600); break;
 		case ID_EXPORT_STARFOX_BIN_EC20: export_starfox_bin(0xEC20); break;
