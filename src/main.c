@@ -523,7 +523,7 @@ WORD arg2word(char * input) {
 
 	if (*remaining_input != '\0' || value > 0xFFFF)
 	{
-		printf2("ERROR: Input address \"%s\" must be 4 hex characters or less.\n", input);
+		printf("ERROR: Input address \"%s\" must be 4 hex characters or less.\n", input);
 		return 1;
 	}
 
