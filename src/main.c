@@ -52,6 +52,7 @@ int current_block = -1;
 struct song_state pattop_state, state;
 int octave = 2;
 int midiDevice = -1;
+BOOL spcImported = 0;
 HINSTANCE hinstance;
 HWND hwndMain;
 HMENU hmenu, hcontextmenu;
@@ -132,7 +133,7 @@ static void tab_selected(int new) {
 		0, 25, rc.right, rc.bottom - 25,
 		hwndMain, NULL, hinstance, NULL);
 
-	SendMessage(tab_hwnd[new], rom ? WM_ROM_OPENED : WM_ROM_CLOSED, 0, 0);
+	SendMessage(tab_hwnd[new], spcImported ? WM_ROM_OPENED : WM_ROM_CLOSED, 0, 0);
 	SendMessage(tab_hwnd[new], cur_song.order_length ? WM_SONG_LOADED : WM_SONG_NOT_LOADED, 0, 0);
 }
 
@@ -382,6 +383,7 @@ static void import_spc() {
 			SendMessage(tab_hwnd[current_tab], WM_SONG_IMPORTED, 0, 0);
 
 			enable_menu_items(starfox_sound_data_cmds, MF_ENABLED);
+			spcImported = 1;
 		} else {
 			// Restore SPC state and samples
 			memcpy(spc, backup_spc, 0x10000);
@@ -533,6 +535,7 @@ WORD arg2word(char * input) {
 BOOL CALLBACK CustomAddressDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 	switch (uMsg) {
 	case WM_INITDIALOG:
+		// limit input to 4 chars
 		SendMessage(GetDlgItem(hWnd, IDC_CUSTOM_ADDRESS), EM_SETLIMITTEXT, 4, 0);
 		SetDlgItemText(hWnd, IDC_CUSTOM_ADDRESS, "E000");
 		break;
