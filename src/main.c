@@ -133,7 +133,11 @@ static void tab_selected(int new) {
 		0, 25, rc.right, rc.bottom - 25,
 		hwndMain, NULL, hinstance, NULL);
 
-	SendMessage(tab_hwnd[new], spcImported ? WM_ROM_OPENED : WM_ROM_CLOSED, 0, 0);
+	if (new == 1) {
+		SendMessage(tab_hwnd[new], spcImported ? WM_ROM_OPENED : WM_ROM_CLOSED, 0, 0);
+	} else {
+		SendMessage(tab_hwnd[new], rom ? WM_ROM_OPENED : WM_ROM_CLOSED, 0, 0);
+	}
 	SendMessage(tab_hwnd[new], cur_song.order_length ? WM_SONG_LOADED : WM_SONG_NOT_LOADED, 0, 0);
 }
 
