@@ -774,7 +774,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case ID_CLOSE:
 			if (!close_rom()) break;
 			SendMessage(tab_hwnd[current_tab], WM_ROM_CLOSED, 0, 0);
-			SetWindowText(hWnd, "EarthBound Music Editor");
+			SetWindowText(hWnd, CLI_FILEDESCRIPTION_STR);
 			break;
 		case ID_IMPORT: import(); break;
 		case ID_IMPORT_SPC: import_spc(); break;
@@ -945,7 +945,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 //	SetUnhandledExceptionFilter(exfilter);
 
-	hwndMain = CreateWindow("ebmused_main", "EarthBound Music Editor (but for StarFox)",
+	hwndMain = CreateWindow("ebmused_main", CLI_FILEDESCRIPTION_STR,
 		WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
 		CW_USEDEFAULT, CW_USEDEFAULT, 720, 540,
 		NULL, NULL, hInstance, NULL);
