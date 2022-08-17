@@ -1,5 +1,6 @@
 #include <windows.h>
 #include "structs.h"
+#include "versioninfo.h"
 
 #ifdef DEBUG
 #define printf printf2
