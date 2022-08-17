@@ -1,0 +1,58 @@
+#include "winver.h"
+#include "versioninfo.h"
+
+//#define DEBUG
+//#define VER_PRIVATEBUILD_STR		"beta for whom?..."
+
+#define VER_PRODUCTVERSION			1,0,0,0
+#define VER_PRODUCTVERSION_STR		"1,0,0,0"
+
+#ifdef DEBUG
+#define VER_DEBUG					VS_FF_DEBUG
+#else
+#define VER_DEBUG					0
+#endif
+
+#ifdef VER_PRIVATEBUILD_STR
+#define VER_PRIVATE					VS_FF_PRIVATEBUILD
+#else
+#define VER_PRIVATE					0
+#endif
+
+VS_VERSION_INFO	VERSIONINFO
+FILEVERSION		VER_FILEVERSION
+PRODUCTVERSION	VER_PRODUCTVERSION
+
+FILEFLAGSMASK	VS_FFI_FILEFLAGSMASK
+FILEFLAGS		VER_DEBUG | VER_PRIVATE
+
+FILEOS			VOS__WINDOWS32
+FILETYPE		VFT_APP
+
+BEGIN
+	BLOCK "StringFileInfo"
+	BEGIN
+		BLOCK "040904B0"
+		BEGIN
+			//VALUE "Comments",			"optional"								//  optional
+			VALUE "CompanyName",		"No warranty, use at your own peril!"	// *required
+			VALUE "FileDescription",	CLI_FILEDESCRIPTION_STR					// *required
+			VALUE "FileVersion",		VER_FILEVERSION_STR						// *required
+			VALUE "InternalName",		"ebmused4sf"							// *required
+			VALUE "LegalCopyright",		"Copyright 2022 phonymike"				//  optional
+			VALUE "LegalTrademarks",	"StarFox Exploration Showcase"			//  optional
+			VALUE "OriginalFilename",	"ebmused4sf.exe"						// *required
+			VALUE "ProductName",		"SFES"									// *required
+			VALUE "ProductVersion",		VER_PRODUCTVERSION_STR					// *required
+			
+			#ifdef VER_PRIVATEBUILD_STR
+			VALUE "PrivateBuild",		VER_PRIVATEBUILD_STR
+			#endif
+		END
+	END
+
+	BLOCK "VarFileInfo"
+	BEGIN
+		VALUE "Translation", 0x0409, 0x04B0										//U.S. English, Unicode
+	END
+END
